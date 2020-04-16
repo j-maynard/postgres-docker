@@ -18,6 +18,7 @@ usage() {
 
 showtest() {
     echo -e "Docker will be configured as follows:"
+    echo -e "   PGCONTAINER_NAME = $PGCONTAINER_NAME"
     echo -e "   PSQL_PASSWORD    = $PSQL_PASSWORD"
     echo -e "   PSQL_PORT        = $PSQL_PORT"
     echo -e "   PGADMIN_PORT     = $PGADMIN_PORT"
@@ -68,6 +69,10 @@ echo "Config file is = $SCRIPTPATH/.config"
 if [ -f "$SCRIPTPATH/.config" ]; then
     echo -e "$green $file_icon  Loading config data from file $SCRIPTPATH/.config... $normal"
     source .config
+fi
+
+if [ -z $PGCONTAINER_NAME ]; then
+    PGCONTAINER_NAME=postgres
 fi
 
 if [ -z $PSQL_PASSWORD ]; then
@@ -166,10 +171,10 @@ if [[ $? != 0 ]]; then
     docker network create --driver bridge pgnetwork > /dev/null 2>&1
 fi
 
-docker ps -f name=postgres |grep postgres > /dev/null 2>&1
+docker ps -f name=$PGCONTAINER_NAME |grep $PGCONTAINER_NAME > /dev/null 2>&1
 if [ $? != 0 ]; then
     echo -e " $whale_icon Starting PostgreSQL..."
-    $DOCKER_CMD run --rm --name postgres \
+    $DOCKER_CMD run --rm --name $PGCONTAINER_NAME \
         --network pgnetwork \
         --hostname postgres \
         -e POSTGRES_PASSWORD=$PSQL_PASSWORD \

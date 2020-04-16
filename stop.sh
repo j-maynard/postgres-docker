@@ -30,6 +30,19 @@ else
   done_icon="✔️"
 fi
 
+# Source from config file
+SCRIPT=`realpath -s $0`
+SCRIPTPATH=`dirname $SCRIPT`
+echo "Config file is = $SCRIPTPATH/.config"
+if [ -f "$SCRIPTPATH/.config" ]; then
+    echo -e "$green $file_icon  Loading config data from file $SCRIPTPATH/.config... $normal"
+    source .config
+fi
+
+if [ -z $PGCONTAINER_NAME ]; then
+    PGCONTAINER_NAME=postgres
+fi
+
 if [ -z $REMOVE_VOLS ]; then
     REMOVE_VOLS=false
 fi
@@ -69,10 +82,10 @@ if [ $? == 0 ]; then
     docker stop pgadmin4 1> /dev/null
 fi
 
-docker ps -f name=postgres |grep postgres > /dev/null 2>&1
+docker ps -f name=$PGCONTAINER_NAME |grep $PGCONTAINER_NAME > /dev/null 2>&1
 if [ $? == 0 ]; then
     echo -e " $stop_icon  Stopping PostreSQL..."
-    docker stop postgres 1> /dev/null
+    docker stop $PGCONTAINER_NAME 1> /dev/null
 fi
 
 if [ $REMOVE_VOLS == 'true' ]; then
