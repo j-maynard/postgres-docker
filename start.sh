@@ -154,30 +154,40 @@ if [[ $? != 0 ]]; then
     docker network create --driver bridge pgnetwork > /dev/null 2>&1
 fi
 
-cat << EOF > /tmp/.pgadmin-env.list
+docker ps -f name=postgres |grep postgres > /dev/null 2>&1
+if [ $? != 0 ]; then
+    echo -e " $whale_icon Starting PostgreSQL..."
+    $DOCKER_CMD run --rm --name postgres \
+        --network pgnetwork \
+        --hostname postgres \
+        -e POSTGRES_PASSWORD=$PSQL_PASSWORD \
+        -d -p $PSQL_PORT:5432 \
+        --volume pgdata:/var/lib/postgresql/data \
+        postgres 1> /dev/null
+else
+    echo -e " $warn_icon  Docker is already running PostgreSQL"
+fi
+
+docker ps -f name=pgadmin4 |grep pgadmin4 > /dev/null 2>&1
+if [ $? != 0 ]; then
+    echo -e " $whale_icon Starting PGAdmin 4..."
+    cat << EOF > /tmp/.pgadmin-env.list
 PGADMIN_DEFAULT_EMAIL=$PGADMIN_USER
 PGADMIN_DEFAULT_PASSWORD=$PGADMIN_PASSWORD
 PGADMIN_LISTEN_PORT=$PGADMIN_PORT
 EOF
-
-echo -e " $whale_icon Starting PostgreSQL..."
-$DOCKER_CMD run --rm --name postgres \
-    --network pgnetwork \
-    --hostname postgres \
-    -e POSTGRES_PASSWORD=$PSQL_PASSWORD \
-    -d -p $PSQL_PORT:5432 \
-    --volume pgdata:/var/lib/postgresql/data \
-    postgres 1> /dev/null
-
-echo -e " $whale_icon Starting PGAdmin 4..."
-$DOCKER_CMD run --rm --name pgadmin4 \
-    -d -p $PGADMIN_PORT:$PGADMIN_PORT \
-    -v pga4data:/var/lib/pgadmin \
-    --env-file /tmp/.pgadmin-env.list \
-    --hostname pgadmin4 \
-    --network pgnetwork \
-    dpage/pgadmin4 1> /dev/null
-
-rm /tmp/.pgadmin-env.list
+    
+    $DOCKER_CMD run --rm --name pgadmin4 \
+        -d -p $PGADMIN_PORT:$PGADMIN_PORT \
+        -v pga4data:/var/lib/pgadmin \
+        --env-file /tmp/.pgadmin-env.list \
+        --hostname pgadmin4 \
+        --network pgnetwork \
+        dpage/pgadmin4 1> /dev/null
+    
+    rm /tmp/.pgadmin-env.list
+else
+    echo -e " $warn_icon  Docker is already running PG Admin 4"
+fi
 
 echo -e " $docker_icon PostgreSQL and PGAdmin 4 are now running in Docker!"

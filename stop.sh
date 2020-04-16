@@ -63,21 +63,50 @@ while [ "$1" != "" ]; do
     shift
 done
 
-echo -e " $stop_icon  Stopping PostreSQL and PGAdmin..."
-docker stop postgres pgadmin4 1> /dev/null
+docker ps -f name=pgadmin4 |grep pgadmin4 > /dev/null 2>&1
+if [ $? == 0 ]; then
+    echo -e " $stop_icon  Stopping PGAdmin 4..."
+    docker stop pgadmin4 1> /dev/null
+fi
+
+docker ps -f name=postgres |grep postgres > /dev/null 2>&1
+if [ $? == 0 ]; then
+    echo -e " $stop_icon  Stopping PostreSQL..."
+    docker stop postgres 1> /dev/null
+fi
 
 if [ $REMOVE_VOLS == 'true' ]; then
-    echo -e " $trash_icon $red Removing PostgreSQL and PGAdmin data $normal"
-    docker volume rm pga4data > /dev/null 2>&1
-    docker volume rm pgdata > /dev/null 2>&1
+    docker volume ls -f name=pga4data |grep pga4data > /dev/null 2>&1
+    if [ $? == 0 ]; then
+        echo -e " $trash_icon $red Removing PGAdmin data... $normal"
+        docker volume rm pga4data > /dev/null 2>&1
+    fi
+    docker volume ls -f name=pgdata |grep pgdata> /dev/null 2>&1
+    if [ $? == 0 ]; then
+        echo -e " $trash_icon $red Removing PostgreSQL data... $normal"
+        docker volume rm pgdata > /dev/null 2>&1
+    fi
 else
-    echo -e " $hd_icon  Persisting Data by keeping docker volumes."
+    count=0
+    docker volume ls -f name=pga4data |grep pga4data > /dev/null 2>&1
+    count=$count+$?
+    docker volume ls -f name=pgdata |grep pgdata> /dev/null 2>&1
+    count=$count+$?
+    if [ $count == 0 ]; then
+        echo -e " $hd_icon  Persisting Data by keeping docker volumes."
+    fi
 fi
 
 if [ $REMOVE_NET == 'true' ]; then
-    echo -e " $dnet_icon $red Removing PGNetwork $normal"
-    docker network rm pgnetwork > /dev/null 2>&1
+    docker network ls -f name=pgnetwork |grep pgnetwork > /dev/null 2>&1
+    if [ $? == 0 ]; then
+        echo -e " $dnet_icon $red Removing PGNetwork $normal"
+        docker network rm pgnetwork > /dev/null 2>&1
+    fi
 else
-    echo -e " $knet_icon  Keeping PGNetwork active."
+    docker network ls -f name=pgnetwork |grep pgnetwork > /dev/null 2>&1
+    if [ $? == 0 ]; then
+        echo -e " $knet_icon  Keeping PGNetwork active."
+    fi
 fi
 echo -e " $done_icon  All done."
