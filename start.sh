@@ -1,26 +1,29 @@
 #!/bin/bash
 
-# Define colors and styles
-normal="\033[0m"
-bold="\033[1m"
-green="\e[32m"
-red="\e[31m"
-yellow="\e[93m"
+usage() {
+    echo -e "Usage:"
+    echo -e "  --psql-password     Sets the PostgreSQL password"
+    echo -e "                      (The $PSQLPASS is '$PSQL_PASSWORD')\n"
+    echo -e "  --psql-port         Sets the PostgreSQL port"
+    echo -e "                      (The $PSQLPO is '$PSQL_PORT')\n"
+    echo -e "  --pgadmin-port      Sets the port for PGAdmin 4"
+    echo -e "                      (The $PGAPORT is '$PGADMIN_PORT')\n"
+    echo -e "  --pgadmin-user      Sets the default login user for PGAdmin 4"
+    echo -e "                      (The $PGAUSER is '$PGADMIN_USER')\n"
+    echo -e "  --pgadmin-password  Sets the password for the default login for PGAdmin 4"
+    echo -e "                      (The $PGAPASS is '$PGADMIN_PASSWORD')\n"
+    echo -e "  -h  --help          Shows this usage message"
+    echo -e "  -t   --test         Shows hows docker will be configrued but won't run docker"
+}
 
-# Define Icons (if in doubt try nerd font... then emoji.. finally nothing)
-if [[ "$NERD_FONT" == 'true' ]]; then
-  warn_icon="\uf071 "
-  docker_icon="\uf308 "
-  whale_icon="🐋"
-elif [[ "$EMOJI" == 'false' ]]; then
-  warn_icon="!"
-  whale_icon=""
-  docker_icon=""
-else
-  warn_icon="⚠️"
-  whale_icon="🐋"
-  docker_icon="🐳"
-fi
+showtest() {
+    echo -e "Docker will be configured as follows:"
+    echo -e "   PSQL_PASSWORD    = $PSQL_PASSWORD"
+    echo -e "   PSQL_PORT        = $PSQL_PORT"
+    echo -e "   PGADMIN_PORT     = $PGADMIN_PORT"
+    echo -e "   PGADMIN_USER     = $PGADMIN_USER"
+    echo -e "   PGADMIN_PASSWORD = $PGADMIN_PASSWORD"
+}
 
 sudowarn() {
     echo -e "$red╒═════════════════════════════════════════════════════════╕$normal"
@@ -32,6 +35,40 @@ sudowarn() {
     echo -e "$red│$normal the docker group.                                       $red│$normal"
     echo -e "$red╘═════════════════════════════════════════════════════════╛$normal\n"
 }
+
+# Define colors and styles
+normal="\033[0m"
+bold="\033[1m"
+green="\e[32m"
+red="\e[31m"
+yellow="\e[93m"
+
+# Define Icons (if in doubt try nerd font... then emoji.. finally nothing)
+if [[ "$NERD_FONT" == 'true' ]]; then
+  file_icon="\ue615"
+  warn_icon="\uf071 "
+  docker_icon="\uf308 "
+  whale_icon="🐋"
+elif [[ "$EMOJI" == 'false' ]]; then
+  file_icon=""
+  warn_icon="!"
+  whale_icon=""
+  docker_icon=""
+else
+  file_icon="📄"
+  warn_icon="⚠️"
+  whale_icon="🐋"
+  docker_icon="🐳"
+fi
+
+# Source from config file
+SCRIPT=`realpath -s $0`
+SCRIPTPATH=`dirname $SCRIPT`
+echo "Config file is = $SCRIPTPATH/.config"
+if [ -f "$SCRIPTPATH/.config" ]; then
+    echo -e "$green $file_icon  Loading config data from file $SCRIPTPATH/.config... $normal"
+    source .config
+fi
 
 if [ -z $PSQL_PASSWORD ]; then
     PSQL_PASSWORD=docker
@@ -69,31 +106,6 @@ else
 fi
 
 TEST=false
-
-usage() {
-    echo -e "Usage:"
-    echo -e "  --psql-password     Sets the PostgreSQL password"
-    echo -e "                      (The $PSQLPASS is '$PSQL_PASSWORD')\n"
-    echo -e "  --psql-port         Sets the PostgreSQL port"
-    echo -e "                      (The $PSQLPO is '$PSQL_PORT')\n"
-    echo -e "  --pgadmin-port      Sets the port for PGAdmin 4"
-    echo -e "                      (The $PGAPORT is '$PGADMIN_PORT')\n"
-    echo -e "  --pgadmin-user      Sets the default login user for PGAdmin 4"
-    echo -e "                      (The $PGAUSER is '$PGADMIN_USER')\n"
-    echo -e "  --pgadmin-password  Sets the password for the default login for PGAdmin 4"
-    echo -e "                      (The $PGAPASS is '$PGADMIN_PASSWORD')\n"
-    echo -e "  -h  --help          Shows this usage message"
-    echo -e "  -t   --test         Shows hows docker will be configrued but won't run docker"
-}
-
-showtest() {
-    echo -e "Docker will be configured as follows:"
-    echo -e "   PSQL_PASSWORD    = $PSQL_PASSWORD"
-    echo -e "   PSQL_PORT        = $PSQL_PORT"
-    echo -e "   PGADMIN_PORT     = $PGADMIN_PORT"
-    echo -e "   PGADMIN_USER     = $PGADMIN_USER"
-    echo -e "   PGADMIN_PASSWORD = $PGADMIN_PASSWORD"
-}
 
 while [ "$1" != "" ]; do
     case $1 in
