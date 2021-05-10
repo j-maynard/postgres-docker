@@ -76,34 +76,46 @@ while [ "$1" != "" ]; do
     shift
 done
 
-docker ps -f name=pgadmin4 |grep pgadmin4 > /dev/null 2>&1
-if [ $? == 0 ]; then
-    echo -e " $stop_icon  Stopping PGAdmin 4..."
-    docker stop pgadmin4 1> /dev/null
+if [[ $(uname) == "Linux" ]]; then
+    if groups $(whoami) |grep docker > /dev/null 2>&1; then
+        DOCKER_CMD="docker"
+    else
+        DOCKER_CMD="sudo docker"
+        sudowarn
+    fi
+else
+    DOCKER_CMD="docker"
 fi
 
-docker ps -f name=$PGCONTAINER_NAME |grep $PGCONTAINER_NAME > /dev/null 2>&1
+
+$DOCKER_CMD ps -f name=pgadmin4 |grep pgadmin4 > /dev/null 2>&1
+if [ $? == 0 ]; then
+    echo -e " $stop_icon  Stopping PGAdmin 4..."
+    $DOCKER_CMD stop pgadmin4 1> /dev/null
+fi
+
+$DOCKER_CMD ps -f name=$PGCONTAINER_NAME |grep $PGCONTAINER_NAME > /dev/null 2>&1
 if [ $? == 0 ]; then
     echo -e " $stop_icon  Stopping PostreSQL..."
-    docker stop $PGCONTAINER_NAME 1> /dev/null
+    $DOCKER_CMD stop $PGCONTAINER_NAME 1> /dev/null
 fi
 
 if [ $REMOVE_VOLS == 'true' ]; then
-    docker volume ls -f name=pga4data |grep pga4data > /dev/null 2>&1
+    $DOCKER_CMD volume ls -f name=pga4data |grep pga4data > /dev/null 2>&1
     if [ $? == 0 ]; then
         echo -e " $trash_icon $red Removing PGAdmin data... $normal"
-        docker volume rm pga4data > /dev/null 2>&1
+        $DOCKER_CMD volume rm pga4data > /dev/null 2>&1
     fi
-    docker volume ls -f name=pgdata |grep pgdata> /dev/null 2>&1
+    $DOCKER_CMD volume ls -f name=pgdata |grep pgdata> /dev/null 2>&1
     if [ $? == 0 ]; then
         echo -e " $trash_icon $red Removing PostgreSQL data... $normal"
-        docker volume rm pgdata > /dev/null 2>&1
+        $DOCKER_CMD volume rm pgdata > /dev/null 2>&1
     fi
 else
     count=0
-    docker volume ls -f name=pga4data |grep pga4data > /dev/null 2>&1
+    $DOCKER_CMD volume ls -f name=pga4data |grep pga4data > /dev/null 2>&1
     count=$count+$?
-    docker volume ls -f name=pgdata |grep pgdata> /dev/null 2>&1
+    $DOCKER_CMD volume ls -f name=pgdata |grep pgdata> /dev/null 2>&1
     count=$count+$?
     if [ $count == 0 ]; then
         echo -e " $hd_icon  Persisting Data by keeping docker volumes."
@@ -111,13 +123,13 @@ else
 fi
 
 if [ $REMOVE_NET == 'true' ]; then
-    docker network ls -f name=pgnetwork |grep pgnetwork > /dev/null 2>&1
+    $DOCKER_CMD network ls -f name=pgnetwork |grep pgnetwork > /dev/null 2>&1
     if [ $? == 0 ]; then
         echo -e " $dnet_icon $red Removing PGNetwork $normal"
-        docker network rm pgnetwork > /dev/null 2>&1
+        $DOCKER_CMD network rm pgnetwork > /dev/null 2>&1
     fi
 else
-    docker network ls -f name=pgnetwork |grep pgnetwork > /dev/null 2>&1
+    $DOCKER_CMD network ls -f name=pgnetwork |grep pgnetwork > /dev/null 2>&1
     if [ $? == 0 ]; then
         echo -e " $knet_icon  Keeping PGNetwork active."
     fi

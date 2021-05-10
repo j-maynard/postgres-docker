@@ -144,11 +144,15 @@ while [ "$1" != "" ]; do
     shift
 done     
 
-if groups $(whoami) |grep docker > /dev/null 2>&1; then
-    DOCKER_CMD="docker"
+if [[ $(uname) == "Linux" ]]; then
+    if groups $(whoami) |grep docker > /dev/null 2>&1; then
+        DOCKER_CMD="docker"
+    else
+        DOCKER_CMD="sudo docker"
+        sudowarn
+    fi
 else
-    DOCKER_CMD="sudo docker"
-    showwarn
+    DOCKER_CMD="docker"
 fi
 
 if [ $TEST == "true" ]; then
@@ -178,7 +182,7 @@ if [ $? != 0 ]; then
         --network pgnetwork \
         --hostname postgres \
         -e POSTGRES_PASSWORD=$PSQL_PASSWORD \
-        -d -p $PSQL_PORT:5432 \
+        -d -p 0.0.0.0:$PSQL_PORT:5432 \
         --volume pgdata:/var/lib/postgresql/data \
         postgres 1> /dev/null
 else
@@ -195,7 +199,7 @@ PGADMIN_LISTEN_PORT=$PGADMIN_PORT
 EOF
     
     $DOCKER_CMD run --rm --name pgadmin4 \
-        -d -p $PGADMIN_PORT:$PGADMIN_PORT \
+        -d -p 0.0.0.0:$PGADMIN_PORT:$PGADMIN_PORT \
         -v pga4data:/var/lib/pgadmin \
         --env-file /tmp/.pgadmin-env.list \
         --hostname pgadmin4 \
